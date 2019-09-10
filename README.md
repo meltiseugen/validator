@@ -1,4 +1,5 @@
-# Validator
+# Map data Validator and struct initializer based on field tags
+
 Validates and initialises a struct with values from a map, based on rules defined inside tags on the struct's fields
 In order to link the field to a map key, use the tag `datakey` (e.g. `datakey:"aKey"`)
 
