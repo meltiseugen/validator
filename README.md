@@ -1,5 +1,16 @@
 # Validator
 Validates and initialises a struct with values from a map, based on rules defined inside tags on the struct's fields
+In order to link the field to a map key, use the tag `datakey` (e.g. `datakey:"aKey"`)
+
+The builtin rules are the following:
+* `required`: checks if the `datakey` is present inside the values map
+* `int`: checks if the map value is convertible to integer
+* `time`: checks if the map value is convertible to `time.Time`
+
+The initialization of the struct is based on the type of the field. This means that, after the validation 
+has passed, the values from the map will be converted to the type of the designated field
+
+The values map is a map of type `map[string]string`
 
 # Quick example
             type InnerStruct struct {
@@ -26,3 +37,23 @@ Validates and initialises a struct with values from a map, based on rules define
 
 # Defining custom rules
 In order to add a new rule you must register it inside the validator by using `RegisterRule` like this:
+
+```   
+func MyRule(mapKey string, m map[string]string, params ...string) error {
+    return nil
+}
+v.RegisterRule("myRule", MyRule)
+```
+
+Now you can use the rule inside the `validate` tag along side the builtin ones
+
+# Defining custom type converters
+Type Converters are useful when you have to convert a string value to a more complex data type (e.g. Mongo primitive ObjectId)
+In order to add a new converter you must register it inside the validator by using `RegisterConverter` like this:
+
+```
+func MyConverter(value string, params ...string) (i interface{}, e error) {
+    return nil
+}
+v.RegisterConverter("MyType", MyConverter)
+```
