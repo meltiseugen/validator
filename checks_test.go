@@ -179,3 +179,65 @@ func TestChecks_checkTime(t *testing.T) {
 		})
 	}
 }
+
+func TestChecks_checkBool(t *testing.T) {
+	var testdata = []struct {
+		key         string
+		in          map[string]string
+		noErrorFlag bool
+	}{
+		{
+			"a",
+			map[string]string{
+				"a": "true",
+			},
+			true,
+		},
+		{
+			"a",
+			map[string]string{
+				"a": "false",
+			},
+			true,
+		},
+		{
+			"a",
+			map[string]string{
+				"a": "True",
+			},
+			false,
+		},
+		{
+			"a",
+			map[string]string{
+				"a": "TRUE",
+			},
+			false,
+		},
+		{
+			"a",
+			map[string]string{
+				"a": "asfsdf",
+			},
+			false,
+		},
+		{
+			"a",
+			map[string]string{
+				"a": "1",
+			},
+			false,
+		},
+	}
+
+	for i, td := range testdata {
+		t.Run("TestCheckRequired_"+strconv.Itoa(i), func(t *testing.T) {
+			err := checkBool(td.key, td.in)
+			if td.noErrorFlag && err != nil {
+				t.Error()
+			} else if !td.noErrorFlag && err == nil {
+				t.Error()
+			}
+		})
+	}
+}

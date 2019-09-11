@@ -60,6 +60,12 @@ func TestConverters_convertToInt(t *testing.T) {
 			true,
 		},
 		{
+			"123",
+			123,
+			"no case; do default",
+			true,
+		},
+		{
 			"-123",
 			-123,
 			"int",
@@ -138,6 +144,50 @@ func TestConverters_convertToTime(t *testing.T) {
 				if !expected.Equal(result.(time.Time)) {
 					t.Error()
 				}
+			} else if !td.noErrorFlag && err == nil {
+				t.Error()
+			}
+		})
+	}
+}
+
+func TestConverters_convertToBool(t *testing.T) {
+	testdata := []struct {
+		in          string
+		out         interface{}
+		noErrorFlag bool
+	}{
+		{
+			"true",
+			true,
+			true,
+		},
+		{
+			"false",
+			false,
+			true,
+		},
+		{
+			"True",
+			true,
+			true,
+		},
+		{
+			"TRUE",
+			true,
+			true,
+		},		{
+			"qwert",
+			true,
+			false,
+		},
+	}
+
+	for i, td := range testdata {
+		t.Run("TestConvertToString_"+strconv.Itoa(i), func(t *testing.T) {
+			result, err := convertToBool(td.in)
+			if td.noErrorFlag && err != nil && result != td.out {
+				t.Error()
 			} else if !td.noErrorFlag && err == nil {
 				t.Error()
 			}
