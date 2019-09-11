@@ -48,11 +48,13 @@ const (
 	ruleInt      string = "int"
 	ruleUnsigned string = "unsigned"
 	ruleTime     string = "time"
+	ruleBool     string = "bool"
 
 	//converter types
 	convertInt    string = "int"
 	convertString string = "string"
 	convertTime   string = "time.Time"
+	convertBool   string = "bool"
 )
 
 type (
@@ -74,11 +76,11 @@ type (
 
 //Creates a new instance of the validator type
 //Also it initializes the validator with the default configuration with before returning it
-func New() validator {
+func New() *validator {
 	validator := validator{}
 	validator.initValidator()
 
-	return validator
+	return &validator
 }
 
 //Initializes the validator with the default configuration and mappings
@@ -92,10 +94,12 @@ func (v *validator) initValidator() {
 	v.ruleMappings[ruleInt] = checkInt
 	v.ruleMappings[ruleUnsigned] = checkUnsigned
 	v.ruleMappings[ruleTime] = checkTime
+	v.ruleMappings[ruleBool] = checkBool
 
 	v.converterMappings[convertInt] = convertToInt
 	v.converterMappings[convertString] = convertToString
 	v.converterMappings[convertTime] = convertToTime
+	v.converterMappings[convertBool] = convertToBool
 
 	v.isInit = true
 }
@@ -202,20 +206,25 @@ func (v *validator) checkRules(m map[string]string, t reflect.Value) error {
 		//If the validation tag is present in the field tags apply the checks for each validation rule
 		if isValidationKey {
 			rules := strings.Split(validationRules, ",")
+			if len(rules) == 1 && rules[0] == "" {
+				continue
+			}
 			for _, ruleName := range rules {
 				stripedRuleName := strings.TrimSpace(ruleName)
 				//Extract the mapped function for the current rule and call it using the map data
 				//If the rule name is not mapped in the validator, return an error
 				if ruleImpl, ok := v.ruleMappings[stripedRuleName]; ok {
+					if currField.Tag.Get(tagMapKey) == "" {
+						return fmt.Errorf("tag '%s' not present struct tags", tagMapKey)
+					}
 					err := ruleImpl(currField.Tag.Get(tagMapKey), m)
 					if err != nil {
 						msg := fmt.Sprintf("validation failed at rule '%s'", ruleName)
 						return errors.Wrap(err, msg)
 					}
 				} else {
-					msg := fmt.Sprintf("validation rule '%s' has no implementation. "+
+					return fmt.Errorf("validation rule '%s' has no implementation. "+
 						"please use 'RegisterRule' to provide one", ruleName)
-					return fmt.Errorf(msg)
 				}
 			}
 		}
@@ -242,12 +251,6 @@ func (v *validator) initData(m map[string]string, t reflect.Value) error {
 		//Get the map value associated with the current field via the "datakey" tag
 		if mapValue, ok := m[currField.Tag.Get(tagMapKey)]; ok {
 			structFieldValue := t.FieldByName(currField.Name)
-
-			//Checks if teh value of the field can be changed, if not it will return an error
-			if !structFieldValue.CanSet() {
-				return fmt.Errorf("cannot set %s field value", currField.Name)
-			}
-
 			//If the builtin data time is more complex (e.g. time.Time) it will build the type
 			//of the struct using the package path and the name of the type
 			structFieldType := structFieldValue.Type()
@@ -271,10 +274,8 @@ func (v *validator) initData(m map[string]string, t reflect.Value) error {
 				//Set the computed value the field
 				structFieldValue.Set(reflect.ValueOf(result))
 			} else {
-				msg := fmt.Sprintf("conversion to '%s' is not defined, please use RegisterConverter", structFieldType)
-				return fmt.Errorf(msg)
+				return fmt.Errorf("conversion to '%s' is not defined, please use RegisterConverter", structFieldType)
 			}
-
 		}
 	}
 	return nil

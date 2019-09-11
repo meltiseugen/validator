@@ -45,3 +45,13 @@ func convertToTime(value string, params ...string) (interface{}, error) {
 func convertToString(value string, params ...string) (interface{}, error) {
 	return value, nil
 }
+
+//Converts a string bool value to a bool type value
+func convertToBool(value string, params ...string) (interface{}, error) {
+	b, err := strconv.ParseBool(value)
+	if err != nil {
+		return nil, fmt.Errorf("error checking bool string")
+	}
+
+	return b, nil
+}
