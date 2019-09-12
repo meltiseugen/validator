@@ -15,7 +15,45 @@ func TestValidator_New(t *testing.T) {
 		if len(v.converterMappings) != 4 {
 			t.Error()
 		}
+		if len(v.ruleMappings) != 5 {
+			t.Error()
+		}
 		if v.isInit != true {
+			t.Error()
+		}
+	}
+}
+
+
+func TestValidator_GetInstance(t *testing.T) {
+	v := GetInstance()
+	v1 := GetInstance()
+	pv := fmt.Sprintf("%p", v)
+	pv1 := fmt.Sprintf("%p", v1)
+	if pv != pv1 {
+		t.Error()
+	}
+	if v == nil {
+		t.Error()
+	} else {
+		if len(v.converterMappings) != 4 {
+			t.Error()
+		}
+		if len(v.ruleMappings) != 5 {
+			t.Error()
+		}
+		if v.isInit != true {
+			t.Error()
+		}
+		_ = v.RegisterRule("rule", func(mapKey string, m map[string]string, params ...string) error {
+			return nil
+		})
+		v3 := GetInstance()
+		v4 := New()
+		if _, ok := v3.ruleMappings["rule"]; !ok {
+			t.Error()
+		}
+		if _, ok := v4.ruleMappings["rule"]; ok {
 			t.Error()
 		}
 	}
@@ -190,17 +228,18 @@ func TestValidator_checkRules3(t *testing.T) {
 				"a": "123",
 				"b": "1",
 			},
-			false,
+			true,
 		},
 	}
 
 	v := New()
 	for i, td := range testdata {
-		t.Run("TestCheckTime_"+strconv.Itoa(i), func(t *testing.T) {
+		t.Run("TestValidator_checkRules3_"+strconv.Itoa(i), func(t *testing.T) {
 			err := v.checkRules(td.m, reflect.ValueOf(&MyStruct{}).Elem())
 			if td.noErrorFlag && err != nil {
 				t.Error()
 			} else if !td.noErrorFlag && err == nil {
+				fmt.Println(err)
 				t.Error()
 			}
 		})

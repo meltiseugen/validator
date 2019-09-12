@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"reflect"
 	"strings"
+	"sync"
 )
 
 const (
@@ -74,6 +75,12 @@ type (
 	}
 )
 
+//Used in order to provide one single instance of the Validator
+var (
+	once sync.Once
+	instance *Validator
+)
+
 //Creates a new instance of the Validator type
 //Also it initializes the Validator with the default configuration with before returning it
 func New() *Validator {
@@ -81,6 +88,14 @@ func New() *Validator {
 	validator.initValidator()
 
 	return &validator
+}
+
+func GetInstance() *Validator {
+	once.Do(func() { // atomic, does not allow repeating
+		instance = New()
+	})
+
+	return instance
 }
 
 //Initializes the Validator with the default configuration and mappings
@@ -102,10 +117,6 @@ func (v *Validator) initValidator() {
 	v.converterMappings[convertBool] = convertToBool
 
 	v.isInit = true
-}
-
-type Map interface {
-	Get() string
 }
 
 //Main function of the Validator that is responsible for both validating the provided
