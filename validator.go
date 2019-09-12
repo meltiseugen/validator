@@ -1,8 +1,8 @@
-//This file is the main implementation of the validator
+//This file is the main implementation of the Validator
 //Here you can find the public APIs as well as the constants used
 //
 //Below you can find an example on how to define a struct and a map in order to
-//use the validator:
+//use the Validator:
 //
 //		type InnerStruct struct {
 //			C int `datakey:"c" validate:"required,nothing,int"`
@@ -23,7 +23,7 @@
 //					"d": "qwerty",
 //				}
 //
-//		v := validator.New()
+//		v := Validator.New()
 //		err := v.ValidateAndInit(m, &s)
 
 package validator
@@ -58,13 +58,13 @@ const (
 )
 
 type (
-	//The definition of the validator
-	//Rule mappings is a map that connects a string rule name to an implementation/validator function
+	//The definition of the Validator
+	//Rule mappings is a map that connects a string rule name to an implementation/Validator function
 	//Rule mapping example: "ruleA" -> CheckA()
 	//ConverterMappings is a map that connects a string type name to a converter function; changes the string value to
 	//the desired type
 	//Converter example: "MyStruct" -> ConvertToMyStruct()
-	validator struct {
+	Validator struct {
 		//public
 
 		//private
@@ -74,19 +74,19 @@ type (
 	}
 )
 
-//Creates a new instance of the validator type
-//Also it initializes the validator with the default configuration with before returning it
-func New() *validator {
-	validator := validator{}
+//Creates a new instance of the Validator type
+//Also it initializes the Validator with the default configuration with before returning it
+func New() *Validator {
+	validator := Validator{}
 	validator.initValidator()
 
 	return &validator
 }
 
-//Initializes the validator with the default configuration and mappings
+//Initializes the Validator with the default configuration and mappings
 //Creates the "ruleMappings" and "converterMappings" maps and adds teh build in functions
-//Before finishing it will set the "isInit" flag to true, which signifies that the validator is ready to be used
-func (v *validator) initValidator() {
+//Before finishing it will set the "isInit" flag to true, which signifies that the Validator is ready to be used
+func (v *Validator) initValidator() {
 	v.ruleMappings = make(map[string]func(mapKey string, m map[string]string, params ...string) error)
 	v.converterMappings = make(map[string]func(value string, params ...string) (interface{}, error))
 
@@ -104,13 +104,13 @@ func (v *validator) initValidator() {
 	v.isInit = true
 }
 
-//Main function of the validator that is responsible for both validating the provided
+//Main function of the Validator that is responsible for both validating the provided
 //data based on the rules applied on the struct's tags, but also initializes the
 //provided empty interface with the data
 //
 //The m parameter is a map with string keys and string values, while i parameter is an
 //interface (normally a pointer to an empty struct)
-func (v *validator) ValidateAndInit(m map[string]string, i interface{}) error {
+func (v *Validator) ValidateAndInit(m map[string]string, i interface{}) error {
 
 	//If the i parameter is not a pointer, return an exception
 	if reflect.ValueOf(i).Kind() != reflect.Ptr {
@@ -122,9 +122,9 @@ func (v *validator) ValidateAndInit(m map[string]string, i interface{}) error {
 		return fmt.Errorf("please provide a pointer to the struct")
 	}
 
-	//If the validator is not initialized, return an error
+	//If the Validator is not initialized, return an error
 	if !v.isInit {
-		return fmt.Errorf("validator not initialized: call New()")
+		return fmt.Errorf("Validator not initialized: call New()")
 	}
 
 	//Using reflection get the concrete value of the pointer i through the Elem()
@@ -155,9 +155,9 @@ func (v *validator) ValidateAndInit(m map[string]string, i interface{}) error {
 //* "mapKey" string parameter which will be the map key to which the struct field will be linked to
 //* "m" a map with string keys and string values which will contains the data provided at the ValidateAndInit function
 //* "params" a list of optional arguments
-func (v *validator) RegisterRule(ruleName string, rule func(mapKey string, m map[string]string, params ...string) error) error { //If the validator is not initialized, return an error
+func (v *Validator) RegisterRule(ruleName string, rule func(mapKey string, m map[string]string, params ...string) error) error { //If the Validator is not initialized, return an error
 	if !v.isInit {
-		return fmt.Errorf("validator not initialized: call New()")
+		return fmt.Errorf("Validator not initialized: call New()")
 	}
 	if ruleName == "" {
 		return fmt.Errorf("empty rule name provided")
@@ -173,9 +173,9 @@ func (v *validator) RegisterRule(ruleName string, rule func(mapKey string, m map
 //The second parameter is a function that needs to respect the required definition:
 //* "value" string parameter is the string value that needs to be converted to the "toType" data type
 //* "params" is a list of optional arguments
-func (v *validator) RegisterConverter(toType string, converter func(value string, params ...string) (interface{}, error)) error {
+func (v *Validator) RegisterConverter(toType string, converter func(value string, params ...string) (interface{}, error)) error {
 	if !v.isInit {
-		return fmt.Errorf("validator not initialized: call New()")
+		return fmt.Errorf("Validator not initialized: call New()")
 	}
 	if toType == "" {
 		return fmt.Errorf("empty rule name provided")
@@ -187,7 +187,7 @@ func (v *validator) RegisterConverter(toType string, converter func(value string
 
 //Validates the map data based on the rules defined on the struct's tags
 //If the provided struct contains several sub struct as fields, they too will be taken into account recursively
-func (v *validator) checkRules(m map[string]string, t reflect.Value) error {
+func (v *Validator) checkRules(m map[string]string, t reflect.Value) error {
 	//Iterate over the list of struct fields
 	for index := 0; index < t.Type().NumField(); index++ {
 		//Get the current field from the struct
@@ -212,7 +212,7 @@ func (v *validator) checkRules(m map[string]string, t reflect.Value) error {
 			for _, ruleName := range rules {
 				stripedRuleName := strings.TrimSpace(ruleName)
 				//Extract the mapped function for the current rule and call it using the map data
-				//If the rule name is not mapped in the validator, return an error
+				//If the rule name is not mapped in the Validator, return an error
 				if ruleImpl, ok := v.ruleMappings[stripedRuleName]; ok {
 					if currField.Tag.Get(tagMapKey) == "" {
 						continue
@@ -234,7 +234,7 @@ func (v *validator) checkRules(m map[string]string, t reflect.Value) error {
 
 //Initializes the struct with the values form the map
 //If the provided struct contains several sub struct as fields, they too will be taken into account recursively
-func (v *validator) initData(m map[string]string, t reflect.Value) error {
+func (v *Validator) initData(m map[string]string, t reflect.Value) error {
 	//Iterate over the list of struct fields
 	for index := 0; index < t.Type().NumField(); index++ {
 		//Get the current field from the struct

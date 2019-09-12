@@ -22,7 +22,7 @@ func TestValidator_New(t *testing.T) {
 }
 
 func TestValidator_RegisterRule2(t *testing.T) {
-	v := validator{}
+	v := Validator{}
 	err := v.RegisterRule("", func(mapKey string, m map[string]string, params ...string) error {
 		return nil
 	})
@@ -52,7 +52,7 @@ func TestValidator_RegisterRule(t *testing.T) {
 }
 
 func TestValidator_RegisterConverter2(t *testing.T) {
-	v := validator{}
+	v := Validator{}
 	err := v.RegisterConverter("", func(value string, params ...string) (i interface{}, e error) {
 		return nil, nil
 	})
@@ -488,7 +488,7 @@ func TestValidator_ValidateAndInit3(t *testing.T) {
 	}
 
 	s := MyStruct{}
-	v := validator{}
+	v := Validator{}
 
 	err := v.ValidateAndInit(m, &s)
 	if err == nil {
