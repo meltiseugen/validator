@@ -215,7 +215,7 @@ func (v *validator) checkRules(m map[string]string, t reflect.Value) error {
 				//If the rule name is not mapped in the validator, return an error
 				if ruleImpl, ok := v.ruleMappings[stripedRuleName]; ok {
 					if currField.Tag.Get(tagMapKey) == "" {
-						return fmt.Errorf("tag '%s' not present struct tags", tagMapKey)
+						continue
 					}
 					err := ruleImpl(currField.Tag.Get(tagMapKey), m)
 					if err != nil {
@@ -254,18 +254,19 @@ func (v *validator) initData(m map[string]string, t reflect.Value) error {
 			//If the builtin data time is more complex (e.g. time.Time) it will build the type
 			//of the struct using the package path and the name of the type
 			structFieldType := structFieldValue.Type()
-			converterName := ""
-			if structFieldType.PkgPath() != "" {
-				converterName = structFieldType.PkgPath() + "." + structFieldType.Name()
-			} else {
-				converterName = structFieldType.Name()
-			}
+			//converterName := ""
+			//if structFieldType.PkgPath() != "" {
+			//	converterName = structFieldType.PkgPath() + "." + structFieldType.Name()
+			//} else {
+			//	converterName = structFieldType.Name()
+			//}
 
 			//Get the designated converter function for the current type from the "converterMappings" and call the
 			//converter function with the map value
 			//If the type is not mapped to a converter it will return an error
-			if converter, ok := v.converterMappings[converterName]; ok {
-				result, err := converter(mapValue, converterName)
+
+			if converter, ok := v.converterMappings[structFieldType.String()]; ok {
+				result, err := converter(mapValue, structFieldType.String())
 				if err != nil {
 					msg := fmt.Sprintf("error converting to type '%s'", structFieldType.Name())
 					return errors.Wrap(err, msg)
