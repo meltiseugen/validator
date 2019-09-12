@@ -104,6 +104,10 @@ func (v *Validator) initValidator() {
 	v.isInit = true
 }
 
+type Map interface {
+	Get() string
+}
+
 //Main function of the Validator that is responsible for both validating the provided
 //data based on the rules applied on the struct's tags, but also initializes the
 //provided empty interface with the data
@@ -124,7 +128,7 @@ func (v *Validator) ValidateAndInit(m map[string]string, i interface{}) error {
 
 	//If the Validator is not initialized, return an error
 	if !v.isInit {
-		return fmt.Errorf("Validator not initialized: call New()")
+		return fmt.Errorf("validator not initialized: call New()")
 	}
 
 	//Using reflection get the concrete value of the pointer i through the Elem()
@@ -157,7 +161,7 @@ func (v *Validator) ValidateAndInit(m map[string]string, i interface{}) error {
 //* "params" a list of optional arguments
 func (v *Validator) RegisterRule(ruleName string, rule func(mapKey string, m map[string]string, params ...string) error) error { //If the Validator is not initialized, return an error
 	if !v.isInit {
-		return fmt.Errorf("Validator not initialized: call New()")
+		return fmt.Errorf("validator not initialized: call New()")
 	}
 	if ruleName == "" {
 		return fmt.Errorf("empty rule name provided")
@@ -175,7 +179,7 @@ func (v *Validator) RegisterRule(ruleName string, rule func(mapKey string, m map
 //* "params" is a list of optional arguments
 func (v *Validator) RegisterConverter(toType string, converter func(value string, params ...string) (interface{}, error)) error {
 	if !v.isInit {
-		return fmt.Errorf("Validator not initialized: call New()")
+		return fmt.Errorf("validator not initialized: call New()")
 	}
 	if toType == "" {
 		return fmt.Errorf("empty rule name provided")
@@ -196,8 +200,7 @@ func (v *Validator) checkRules(m map[string]string, t reflect.Value) error {
 		if currField.Type.Kind() == reflect.Struct {
 			err := v.checkRules(m, t.Field(index))
 			if err != nil {
-				msg := fmt.Sprintf("validation of sub-struct '%s' failed", currField.Name)
-				return errors.Wrap(err, msg)
+				return err
 			}
 		}
 
@@ -219,8 +222,7 @@ func (v *Validator) checkRules(m map[string]string, t reflect.Value) error {
 					}
 					err := ruleImpl(currField.Tag.Get(tagMapKey), m)
 					if err != nil {
-						msg := fmt.Sprintf("validation failed at rule '%s'", ruleName)
-						return errors.Wrap(err, msg)
+						return err
 					}
 				} else {
 					return fmt.Errorf("validation rule '%s' has no implementation. "+
@@ -243,8 +245,7 @@ func (v *Validator) initData(m map[string]string, t reflect.Value) error {
 		if currField.Type.Kind() == reflect.Struct {
 			err := v.initData(m, t.Field(index))
 			if err != nil {
-				msg := fmt.Sprintf("error initializing sub-struct '%s'", currField.Name)
-				return errors.Wrap(err, msg)
+				return err
 			}
 		}
 
@@ -254,22 +255,13 @@ func (v *Validator) initData(m map[string]string, t reflect.Value) error {
 			//If the builtin data time is more complex (e.g. time.Time) it will build the type
 			//of the struct using the package path and the name of the type
 			structFieldType := structFieldValue.Type()
-			//converterName := ""
-			//if structFieldType.PkgPath() != "" {
-			//	converterName = structFieldType.PkgPath() + "." + structFieldType.Name()
-			//} else {
-			//	converterName = structFieldType.Name()
-			//}
-
 			//Get the designated converter function for the current type from the "converterMappings" and call the
 			//converter function with the map value
 			//If the type is not mapped to a converter it will return an error
-
 			if converter, ok := v.converterMappings[structFieldType.String()]; ok {
 				result, err := converter(mapValue, structFieldType.String())
 				if err != nil {
-					msg := fmt.Sprintf("error converting to type '%s'", structFieldType.Name())
-					return errors.Wrap(err, msg)
+					return err
 				}
 
 				//Set the computed value the field
